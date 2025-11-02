@@ -23,18 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Use Node 20 LTS
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      # Work around npm 10 optional-deps bug by using npm 9
-      - name: Downgrade npm to 9.x for CI
-        run: npm i -g npm@9
-
-      # Use the lockfile for reproducible install
       - name: Install deps
-        run: npm ci
+        shell: bash
+        run: |
+          npm ci --include=optional
+          # some runners still need a rebuild to link native/optional bins
+          npm rebuild rollup esbuild --verbose || true
 
       - name: Build frontend
         run: npm run build
