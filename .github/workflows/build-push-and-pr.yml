@@ -1,0 +1,69 @@
+name: "frontend: build -> GHCR -> PR to infra"
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/skillswap-frontend
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-push-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps & build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Login to GHCR (GITHUB_TOKEN)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        shell: bash
+        run: |
+          TAG=${GITHUB_SHA::7}
+          docker build -t "$IMAGE:$TAG" -t "$IMAGE:dev" .
+          docker push "$IMAGE:$TAG"
+          docker push "$IMAGE:dev"
+
+      - name: Open PR to infra (bump frontend tag)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=${GITHUB_SHA::7}
+          git clone "https://github.com/${{ secrets.INFRA_REPO }}" infra
+          cd infra
+          # replace the tag line in environments/dev/values-frontend.yaml
+          sed -i 's/^[[:space:]]*tag:[[:space:]]*".*"/  tag: "'$TAG'"/' environments/dev/values-frontend.yaml
+          git config user.name  "${{ secrets.GH_USERNAME }}"
+          git config user.email "${{ secrets.GH_EMAIL }}"
+          BR="ci/frontend-${GITHUB_RUN_ID}"
+          git checkout -b "$BR"
+          git add environments/dev/values-frontend.yaml
+          git commit -m "infra(dev): frontend image tag -> $TAG"
+          git push "https://x-access-token:${{ secrets.CR_PAT }}@github.com/${{ secrets.INFRA_REPO }}" "$BR"
+          curl -s -H "Authorization: token ${{ secrets.CR_PAT }}" \
+               -H "Accept: application/vnd.github+json" \
+               -d "{\"title\":\"Update frontend tag to $TAG\",\"head\":\"$BR\",\"base\":\"${{ secrets.INFRA_BRANCH }}\",\"body\":\"Automated PR from frontend CI\"}" \
+               "https://api.github.com/repos/${{ secrets.INFRA_REPO }}/pulls"
