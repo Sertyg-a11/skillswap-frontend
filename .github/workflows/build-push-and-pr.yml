@@ -56,22 +56,35 @@ jobs:
             docker push "$IMAGE:$TAG"
             docker push "$IMAGE:dev"
 
-      - name: Open PR to infra (bump frontend tag)
+      - name: Open PR to infra (bump frontend tag)   
         shell: bash
+        env:
+          INFRA_REPO: ${{ secrets.INFRA_REPO }}        
+          INFRA_BRANCH: ${{ secrets.INFRA_BRANCH }}    
+          GH_USER: ${{ secrets.GH_USERNAME }}
+          GH_EMAIL: ${{ secrets.GH_EMAIL }}
+          PAT: ${{ secrets.CR_PAT }}                   # PAT with repo (or public_repo) + write:packages
         run: |
           set -euo pipefail
           TAG=${GITHUB_SHA::7}
-          git clone "https://github.com/${{ secrets.INFRA_REPO }}" infra
+          BR="ci/frontend-${GITHUB_RUN_ID}-${TAG}"     # backend: ci/backend-...
+
+          # Authenticated clone (works for private repos)
+          git clone "https://x-access-token:${PAT}@github.com/${INFRA_REPO}.git" infra
           cd infra
+
+          # Bump the tag in the right values file
           sed -i 's/^[[:space:]]*tag:[[:space:]]*".*"/  tag: "'$TAG'"/' environments/dev/values-frontend.yaml
-          git config user.name  "${{ secrets.GH_USERNAME }}"
-          git config user.email "${{ secrets.GH_EMAIL }}"
-          BR="ci/frontend-${GITHUB_RUN_ID}"
+          # backend workflow: environments/dev/values-backend.yaml
+
+          git config user.name  "$GH_USER"
+          git config user.email "$GH_EMAIL"
           git checkout -b "$BR"
           git add environments/dev/values-frontend.yaml
           git commit -m "infra(dev): frontend image tag -> $TAG"
-          git push "https://x-access-token:${{ secrets.CR_PAT }}@github.com/${{ secrets.INFRA_REPO }}" "$BR"
-          curl -s -H "Authorization: token ${{ secrets.CR_PAT }}" \
-               -H "Accept: application/vnd.github+json" \
-               -d "{\"title\":\"Update frontend tag to $TAG\",\"head\":\"$BR\",\"base\":\"${{ secrets.INFRA_BRANCH }}\",\"body\":\"Automated PR from frontend CI\"}" \
-               "https://api.github.com/repos/${{ secrets.INFRA_REPO }}/pulls"
+          git push "https://x-access-token:${PAT}@github.com/${INFRA_REPO}.git" "$BR"
+
+          # Create PR via API
+          curl -s -H "Authorization: token ${PAT}" -H "Accept: application/vnd.github+json" \
+            -d "{\"title\":\"Update frontend tag to ${TAG}\",\"head\":\"${BR}\",\"base\":\"${INFRA_BRANCH}\",\"body\":\"Automated PR from frontend CI\"}" \
+            "https://api.github.com/repos/${INFRA_REPO}/pulls"
