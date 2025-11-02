@@ -23,14 +23,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Use Node 20 LTS
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
-      - name: Install deps & build
-        run: |
-          npm ci
-          npm run build
+      # Work around npm 10 optional-deps bug by using npm 9
+      - name: Downgrade npm to 9.x for CI
+        run: npm i -g npm@9
+
+      # Use the lockfile for reproducible install
+      - name: Install deps
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Login to GHCR (GITHUB_TOKEN)
         uses: docker/login-action@v3
@@ -54,7 +61,6 @@ jobs:
           TAG=${GITHUB_SHA::7}
           git clone "https://github.com/${{ secrets.INFRA_REPO }}" infra
           cd infra
-          # replace the tag line in environments/dev/values-frontend.yaml
           sed -i 's/^[[:space:]]*tag:[[:space:]]*".*"/  tag: "'$TAG'"/' environments/dev/values-frontend.yaml
           git config user.name  "${{ secrets.GH_USERNAME }}"
           git config user.email "${{ secrets.GH_EMAIL }}"
