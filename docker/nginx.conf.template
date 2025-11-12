@@ -5,16 +5,14 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
-  # Static SPA + client routing
   location / {
     try_files $uri /index.html;
   }
 
-  # Proxy API to backend service inside the cluster/network
-  # Compose: service name "backend" (see your backend compose)
-  # K8s: change to "skillswap-backend" (Service DNS)
+  # 👇 BACKEND_BASE is a full origin WITHOUT trailing slash, e.g. http://backend:8080
   location /api/ {
-    proxy_pass http://backend:8080/api/;   # K8s: http://skillswap-backend:8080/api/;
+    proxy_pass ${BACKEND_BASE}/api/;  # no variables here after envsubst
+    proxy_redirect off;
 
     proxy_set_header Host              $host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -26,14 +24,12 @@ server {
     proxy_read_timeout 60s;
   }
 
-  # Long cache for built assets
   location ~* \.(?:js|css|woff2?|ttf|eot)$ {
     expires 30d;
     add_header Cache-Control "public, immutable";
     try_files $uri =404;
   }
 
-  # Mild security headers
   add_header X-Content-Type-Options nosniff always;
   add_header X-Frame-Options DENY always;
   add_header Referrer-Policy no-referrer-when-downgrade always;
