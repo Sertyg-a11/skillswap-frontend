@@ -9,6 +9,11 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8081',
       '/actuator': 'http://localhost:8081',
+      '/ws': {
+        target: 'http://localhost:8081',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 })

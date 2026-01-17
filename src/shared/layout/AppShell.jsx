@@ -17,7 +17,7 @@ export default function AppShell() {
               SkillSwap
             </Link>
             <nav className="hidden sm:flex text-sm text-slate-600 gap-1">
-              <NavLinkItem to="/app/conversations">Home</NavLinkItem>
+              <NavLinkItem to="/app/conversations">Messages</NavLinkItem>
               <NavLinkItem to="/app/search">Search</NavLinkItem>
               <NavLinkItem to="/app/profile">Profile</NavLinkItem>
               <NavLinkItem to="/app/privacy">Privacy</NavLinkItem>
@@ -37,7 +37,7 @@ export default function AppShell() {
 
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="sm:hidden mb-4 flex gap-2 flex-wrap">
-          <NavLinkItem to="/app/conversations">Home</NavLinkItem>
+          <NavLinkItem to="/app/conversations">Messages</NavLinkItem>
           <NavLinkItem to="/app/search">Search</NavLinkItem>
           <NavLinkItem to="/app/profile">Profile</NavLinkItem>
           <NavLinkItem to="/app/privacy">Privacy</NavLinkItem>
