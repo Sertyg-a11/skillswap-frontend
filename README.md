@@ -1,13 +1,67 @@
-# React + Vite
+# SkillSwap Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React single-page app for **SkillSwap** — a skill-exchange platform where users find each other by skill and chat in real time. This is the web client for the [skillswap-backend](https://github.com/Sertyg-a11/skillswap-backend) microservices and is deployed via [skillswap-infra](https://github.com/Sertyg-a11/skillswap-infra).
 
-Currently, two official plugins are available:
+## Tech stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Area | Choice |
+|------|--------|
+| Framework | React 19 + Vite 7 |
+| Routing | React Router 7 |
+| Styling | Tailwind CSS 4 |
+| Auth | Keycloak (OIDC) via `keycloak-js` |
+| Real-time | WebSocket over STOMP (`@stomp/stompjs` + SockJS) |
+| Tooling | ESLint 9 |
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-"# skill-swap-frontend" 
+- **Keycloak-based auth** — OIDC login, silent token refresh, and a bearer-token provider injected into every API and WebSocket call.
+- **Real-time messaging** — STOMP-over-WebSocket conversations with live delivery and read receipts.
+- **Skill search & matching** — find users by the skills they offer.
+- **Profile & skills management** — edit your profile and maintain your skill list.
+
+## Project structure
+
+```
+src/
+├── app/            # App shell, router, providers
+├── features/
+│   ├── auth/         # Keycloak AuthProvider + token handling
+│   ├── conversations/# Chat UI
+│   ├── search/       # Skill/user search
+│   ├── users/        # Profiles & skills
+│   └── homepage/
+├── services/       # API client + WebSocket service
+└── shared/         # Layout and reusable UI
+```
+
+## Getting started
+
+```bash
+npm install
+cp .env.example .env    # set VITE_API_BASE_URL and Keycloak config
+npm run dev             # start Vite dev server
+```
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start the dev server with HMR |
+| `npm run build` | Production build |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run ESLint |
+
+## Configuration
+
+Environment variables (see `.env.example`):
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_BASE_URL` | Base URL of the API gateway |
+| `VITE_KEYCLOAK_URL` | Keycloak server URL |
+| `VITE_KEYCLOAK_REALM` | Keycloak realm |
+| `VITE_KEYCLOAK_CLIENT_ID` | Public client ID |
+
+## Related repositories
+
+- [skillswap-backend](https://github.com/Sertyg-a11/skillswap-backend) — Spring Boot microservices
+- [skillswap-infra](https://github.com/Sertyg-a11/skillswap-infra) — Kubernetes/GitOps + Docker Compose deployment
